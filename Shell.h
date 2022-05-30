@@ -29,7 +29,7 @@
 
 #ifdef ARDUINO
 #include <Arduino.h>
-#ifdef ESP8266
+#if defined(ESP8266) || defined(ESP32)
 #include <pgmspace.h>
 #else
 #include <avr/pgmspace.h>
@@ -48,7 +48,7 @@
 /**
  * Defines the maximum number of commands that can be registered
  */
-#define CONFIG_SHELL_MAX_COMMANDS		5
+#define CONFIG_SHELL_MAX_COMMANDS		8
 #endif
 #if !defined(CONFIG_SHELL_MAX_INPUT)
 /**
