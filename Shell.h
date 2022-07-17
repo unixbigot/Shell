@@ -56,6 +56,12 @@
  */
 #define CONFIG_SHELL_MAX_INPUT			70
 #endif
+#if !defined(CONFIG_SHELL_MAX_PROMPT)
+/**
+ * Defines the maximum characters that the prompt buffer can contain
+ */
+#define CONFIG_SHELL_MAX_PROMPT			100
+#endif
 #if !defined(CONFIG_SHELL_MAX_COMMAND_ARGS)
 /**
  * Configures the maximum number of arguments per command that can be accepted
@@ -125,6 +131,11 @@ typedef int (*shell_reader_t) (char *);
  * terminal (function pointer)
  */
 typedef void (*shell_bwriter_t)(char *, uint8_t);
+
+/*
+ * Callback for generating a prompt (into the supplied buffer)
+ */
+typedef void (*shell_prompter_t)(char *,uint8_t);
 
 /**
  * This enumeration defines the errors printed by the programs called by the
@@ -218,6 +229,11 @@ extern "C" {
 	 * or returns false if something fails (no more commands can be registered).
 	 */
 	bool shell_register(shell_program_t program, const char * string);
+
+	/*
+	 * @brief Registers a callback (optional) for generating prompt
+	 */
+	void shell_register_prompt(shell_prompter_t prompt_cb_ptr);
 
 	/**
 	 * @brief Unregister all commands

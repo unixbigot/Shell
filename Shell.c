@@ -37,6 +37,10 @@ char * argv_list[CONFIG_SHELL_MAX_COMMAND_ARGS];
  */
 char shellbuf[CONFIG_SHELL_MAX_INPUT];
 
+char shell_prompt_buf[CONFIG_SHELL_MAX_PROMPT];
+static shell_prompter_t prompt_cb = NULL;
+
+
 #ifdef ARDUINO
 /**
  * This is the buffer for format strings coming from PROGMEM, they´re copied here
@@ -139,6 +143,12 @@ bool shell_register(shell_program_t program, const char * string)
 	}
 	return false;
 }
+
+void shell_register_prompt(shell_prompter_t prompt_cb_ptr) 
+{
+	prompt_cb = prompt_cb_ptr;
+}
+
 
 void shell_unregister_all()
 {
@@ -501,11 +511,17 @@ static void shell_process_escape(int argc, char ** argv)
 
 static void shell_prompt()
 {
+	if (prompt_cb) {
+		prompt_cb(shell_prompt_buf, sizeof(shell_prompt_buf));
+		shell_print((const char *)shell_prompt_buf);
+	}
+	else {
 #ifdef ARDUINO
-	shell_print_pm(PSTR("device>"));
+		shell_print_pm(PSTR("device>"));
 #else
-	shell_print((const char *) "device>");
+		shell_print((const char *) "device>");
 #endif
+	}
 }
 
 /*-------------------------------------------------------------*
