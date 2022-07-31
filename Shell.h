@@ -48,7 +48,7 @@
 /**
  * Defines the maximum number of commands that can be registered
  */
-#define CONFIG_SHELL_MAX_COMMANDS		8
+#define CONFIG_SHELL_MAX_COMMANDS		20
 #endif
 #if !defined(CONFIG_SHELL_MAX_INPUT)
 /**
