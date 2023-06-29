@@ -48,7 +48,7 @@
 /**
  * Defines the maximum number of commands that can be registered
  */
-#define CONFIG_SHELL_MAX_COMMANDS		20
+#define CONFIG_SHELL_MAX_COMMANDS		25
 #endif
 #if !defined(CONFIG_SHELL_MAX_INPUT)
 /**
@@ -77,6 +77,14 @@
 #define CONFIG_SHELL_FMT_BUFFER			70
 #endif
 
+#ifndef CONFIG_SHELL_MAX_HISTORY
+#ifdef ESP32
+#define CONFIG_SHELL_MAX_HISTORY 10
+#else 
+#define CONFIG_SHELL_MAX_HISTORY 0
+#endif
+#endif
+
 /**
  * End of user configurable parameters, do not touch anything below this line
  */
@@ -90,6 +98,7 @@
 #define SHELL_ASCII_HT				0x09
 #define SHELL_ASCII_LF				0x0A
 #define SHELL_ASCII_CR				0x0D
+#define SHELL_ASCII_NAK				0x15
 #define SHELL_ASCII_ESC				0x1B
 #define SHELL_ASCII_DEL				0x7F
 #define SHELL_ASCII_US				0x1F

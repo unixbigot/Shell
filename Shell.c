@@ -18,6 +18,7 @@
 	Author e-mail: ruben at geekfactory dot mx
  */
 #include "Shell.h"
+#include <ctype.h>
 
 /**
  * This structure array contains the available commands and they associated
@@ -37,8 +38,10 @@ char * argv_list[CONFIG_SHELL_MAX_COMMAND_ARGS];
  */
 char shellbuf[CONFIG_SHELL_MAX_INPUT];
 
-char shell_prompt_buf[CONFIG_SHELL_MAX_PROMPT];
-static shell_prompter_t prompt_cb = NULL;
+#if CONFIG_SHELL_MAX_HISTORY > 0
+char shell_history [CONFIG_SHELL_MAX_HISTORY][CONFIG_SHELL_MAX_INPUT];
+#endif
+
 
 
 #ifdef ARDUINO
@@ -51,6 +54,8 @@ char shellfmtbuf[CONFIG_SHELL_FMT_BUFFER];
 
 shell_reader_t shell_reader = 0;
 shell_writer_t shell_writer = 0;
+shell_prompter_t prompt_cb = 0;
+char shell_prompt_buf[CONFIG_SHELL_MAX_PROMPT];
 struct shell_outbuffer_data * obhandle = 0;
 bool initialized = false;
 
@@ -115,6 +120,11 @@ bool shell_init(shell_reader_t reader, shell_writer_t writer, char * msg)
 		shell_println((const char *) SHELL_VERSION_STRING);
 #endif
 	}
+#if CONFIG_SHELL_MAX_HISTORY > 0
+	for (int h=0; h<CONFIG_SHELL_MAX_HISTORY; h++) {
+		shell_history[h][0] = '\0';
+	}
+#endif
 	shell_prompt();
 	return true;
 }
@@ -343,6 +353,14 @@ void shell_task()
 			} else
 				shell_putc(SHELL_ASCII_BEL);
 			break;
+		case SHELL_ASCII_NAK: // ctrl-u delete line
+			while (count > 0) {
+				count--;
+				shell_putc(SHELL_ASCII_BS);
+				shell_putc(SHELL_ASCII_SP);
+				shell_putc(SHELL_ASCII_BS);
+			}
+			break;
 		default:
 			// Process printable characters, but ignore other ASCII chars
 			if (count < (CONFIG_SHELL_MAX_INPUT - 1) && rxchar >= 0x20 && rxchar < 0x7F) {
@@ -353,6 +371,34 @@ void shell_task()
 		}
 		// Check if a full command is available on the buffer to process
 		if (cc) {
+#if CONFIG_SHELL_MAX_HISTORY>0
+			if (strcmp(shellbuf,"!!")==0) {
+				strncpy(shellbuf,shell_history[0],CONFIG_SHELL_MAX_INPUT);
+				count=strlen(shellbuf);
+			}
+			else if ((shellbuf[0]=='!') && (strlen(shellbuf)==2) && isdigit(shellbuf[1])) {
+				int h = shellbuf[1] - '0';
+				if (h>CONFIG_SHELL_MAX_HISTORY) h=CONFIG_SHELL_MAX_HISTORY;	
+				strncpy(shellbuf,shell_history[h],CONFIG_SHELL_MAX_INPUT);
+				count=strlen(shellbuf);
+			}
+			else if (strcmp(shellbuf,"!")==0) {
+				for (int h = CONFIG_SHELL_MAX_HISTORY-1;h>=0;h--) {
+					if (shell_history[h][0]) {
+						shell_printf("\r\n%d - %s", h, shell_history[h]);
+					}
+				}
+				cc=false;
+			}
+			else {
+				// update history
+				for (int h=CONFIG_SHELL_MAX_HISTORY-1;h--;h<0) {
+					strncpy(shell_history[h],shell_history[h-1],CONFIG_SHELL_MAX_INPUT);
+				}
+				strncpy(shell_history[0],shellbuf,CONFIG_SHELL_MAX_INPUT);
+			}
+#endif
+			
 			argc = shell_parse(shellbuf, argv_list, CONFIG_SHELL_MAX_COMMAND_ARGS);
 			// Process escape sequences before giving args to command implementation
 			shell_process_escape(argc, argv_list);
@@ -370,6 +416,7 @@ void shell_task()
 					// Run the appropriate function
 					retval = list[i].shell_program(argc, argv_list);
 					cc = false;
+
 				}
 			}
 			// If no command found and buffer not empty
